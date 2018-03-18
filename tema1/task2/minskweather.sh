@@ -1,17 +1,15 @@
 #!/bin/bash
 
-#rm -f index.html
+N=$(sed 's/N=//' config.ini)
 
 while true
 do
-	wget -b -o pogoda_minsk https://pogoda.tut.by
+	wget -O pogoda_minsk -o wget_log https://pogoda.tut.by
 
 	temp_now=$(grep 'class="temp-i"' pogoda_minsk |
 	head -n 1 |
 	sed 's/<span class="temp-i">//; s!&deg;</span></div>!!')
 
-#	rm index.html
-
 	echo "Now: $temp_now"
-	sleep 3
+	sleep $N
 done
