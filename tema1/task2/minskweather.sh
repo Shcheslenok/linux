@@ -1,5 +1,7 @@
 #!/bin/bash
 
+which wget grep sed head sleep
+
 N=$(sed 's/N=//' config.ini)
 
 while true
