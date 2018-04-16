@@ -1,6 +1,19 @@
 #!/bin/bash
 
-which wget grep sed head sleep
+flag=false
+for util in wget grep sed head sleep
+do
+	if [ "$(which "$util")" == "" ]
+	then
+		echo "You need to install $util"
+		flag=true
+	fi
+done
+
+if $flag
+then
+	exit 1
+fi
 
 N=$(sed 's/N=//' config.ini)
 
