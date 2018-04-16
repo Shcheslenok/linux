@@ -15,5 +15,11 @@ libs: $(OBJECTS) $(LD_LIB).c
 	ln -s $(LD_LIB).so.0.0 $(LD_LIB).so
 	ln -s $(LD_LIB).so.0.0 $(LD_LIB).so.0
 
+install:
+	install	$(LD_LIB).so.0 /usr/lib/
+
+uninstall:
+	rm -rf /usr/lib/$(LD_LIB).so.0
+
 clean:
 	rm -rf *.o *.so* *.a $(EXECFILE)
