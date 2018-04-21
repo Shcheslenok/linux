@@ -5,7 +5,7 @@ all: main
 main: $(SOURCES)
 	gcc proc_A.c -o proc_A
 	gcc proc_B.c -o proc_B
-	gcc proc_C.c -o proc_C
+	gcc proc_C.c -lpthread -o proc_C
 	gcc main.c -o main
 
 clean:
