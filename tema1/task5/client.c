@@ -5,6 +5,9 @@
 #include <sys/msg.h>
 #include <sys/types.h>
 #include <errno.h>
+#define INT 1
+#define ARRAY 2
+#define STRUCT 3
 
 //client
 int main(void){
@@ -12,6 +15,7 @@ int main(void){
     char pathname[] = "server";
     key_t key;
     struct msgbuf{
+		long mtype;
         int num;
         char str[5];
         struct mystruct{
@@ -21,36 +25,28 @@ int main(void){
         } in_struct;
     } mybuf;
     
-    if((key = ftok(pathname, 1)) < 0){
+    if((key = ftok(pathname, 0)) < 0){
         printf("ERROR ftok\n");
         exit(-1);
     }
 
-    if ((msqid = msgget(key, 0666 | IPC_CREAT)) < 0){
-        printf("ERROR msgget\n");
+    if ((msqid = msgget(key, 0666)) < 0){
+        printf("ERROR msgget: no connection\n");
         exit(-1);
     }
 
-    mybuf.num = 5;
+	printf("Connected\n");
+	
+	mybuf.mtype = STRUCT;
+    mybuf.num = 0;
     strcpy(mybuf.str, "Hello");
     mybuf.in_struct.a = 1;
     mybuf.in_struct.b = 2;
     mybuf.in_struct.c = 3;
 
-    int len = 100;
-    if (msgsnd(msqid, (struct msgbuf *) &mybuf, 6*sizeof(int), 0) < 0){
-        msgctl(msqid, IPC_RMID, (struct msqid_ds *) NULL);
+    if (msgsnd(msqid, (struct msgbuf *) &mybuf, 8*sizeof(int), 0) < 0){
         printf("ERROR msgsnd\n");
         exit(-1);
     }
-
-	if(msgrcv(msqid, (struct msgbuf *) &mybuf, sizeof(mybuf), 0, IPC_NOWAIT) < 0){
-		printf("ERROR MSGRCV\n");
-		exit(-1);
-	}
-
-	if(errno == EAGAIN){
-		printf("No connection to the server\n");
-	}
 }
 
