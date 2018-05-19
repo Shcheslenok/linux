@@ -8,14 +8,33 @@
 #include <getopt.h>
 #include <string.h>
 #include <time.h>
+#include <signal.h>
 
 #define INT 1
 #define STRING 2
 #define STRUCT 3
+#define REQUEST_SERVER_PID 254
+#define SERVER_PID 255
+
+int msqid;
+void fsignal(int sig){
+	switch (sig){
+		case SIGTERM:
+		case SIGQUIT:
+		case SIGINT:
+			msgctl(msqid, IPC_RMID, (struct msqid_ds *) NULL);
+			exit(0);
+	}
+}
 
 //server
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[], char *envp[]){
 
+	for(int i = 1; i < 32; i++)
+		signal(i, fsignal);
+		 
+	int pid;
+	int status;
 	int opt;
 	mode_t mode = 0666;
 	int fd;
@@ -24,7 +43,7 @@ int main(int argc, char *argv[]){
 	char * file_struct = "struct.txt";
 	char str_help[] = 
 			"server [options] ...\n"
-			"-D - Start as demon\n"
+			"-D - Start as daemon\n"
 			"-i <namefile> - name of file with int\n"
 			"-c <namefile> - name of file with char[5]\n"
 			"-s <namefile> - name of file with struct\n"
@@ -33,7 +52,14 @@ int main(int argc, char *argv[]){
 	while((opt = getopt(argc, argv, "Dhi:c:s:")) != -1){
 		switch(opt){
 			case 'D':
-				printf("Demon\n");
+				if (fork()){
+					exit(0);
+				}
+				umask(0);
+				fclose(stdin);
+				fclose(stdout);
+				fclose(stderr);
+				setsid();	
 				break;
 
 			case 'i':
@@ -62,7 +88,6 @@ int main(int argc, char *argv[]){
 		}
 	}
 
-    int msqid;
     char pathname[] = "server";
     key_t key;
     struct msgbuf{
@@ -91,7 +116,7 @@ int main(int argc, char *argv[]){
 	struct tm *u;
 	time_t timer;
 	char elem[10];
-
+	
     while(1){
     	if (msgrcv(msqid, (struct msgbuf *) &mybuf, sizeof(mybuf), 0, 0) < 0){
         	printf("ERROR msgrcv\n");
@@ -100,8 +125,7 @@ int main(int argc, char *argv[]){
 		
 		timer = time(NULL);
 		u = localtime(&timer);
-		strftime(s_time, 40/*strlen(s_time)*/, "%x %X" /*"%d.%m.%Y" %H:%M:%S"*/, u);
-		printf("time: %s\n",s_time);
+		strftime(s_time, 40, "%x %X", u);
 
 		if (mybuf.mtype == INT){
 			if ((fd=open(file_int, O_WRONLY | O_APPEND | O_CREAT, mode)) < 0){
@@ -168,7 +192,21 @@ int main(int argc, char *argv[]){
 			close(fd);
 		}
 
-		printf("num: %d, str: %s\nstruct{a: %d, b: %d, c: %d}\n",mybuf.num, mybuf.str, mybuf.in_struct.a, mybuf.in_struct.b, mybuf.in_struct.c);
+		if (mybuf.mtype == REQUEST_SERVER_PID){
+			mybuf.mtype = SERVER_PID;
+			mybuf.num = getpid();
+			if(msgsnd(msqid, (struct msgbuf *) &mybuf, sizeof(mybuf), 0) < 0){
+				printf("ERROR MSGSND\n");
+				exit(1);
+			}
+		}
+
+		if (mybuf.mtype == SERVER_PID){
+			if(msgsnd(msqid, (struct msgbuf *) &mybuf, sizeof(mybuf), 0) < 0){
+				printf("ERROR MSGSND\n");
+				exit(1);
+			}
+		}
 	}
 }
 

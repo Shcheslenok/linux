@@ -6,9 +6,12 @@
 #include <sys/types.h>
 #include <getopt.h>
 #include <errno.h>
+
 #define INT 1
 #define STRING 2
 #define STRUCT 3
+#define REQUEST_SERVER_PID 254
+#define SERVER_PID 255
 
 //client
 int main(int argc, char *argv[]){
@@ -16,6 +19,7 @@ int main(int argc, char *argv[]){
 			"client [option] ...\n"
 			"-i - input from keybord\n"
 			"-f <filename> - input from file\n"
+			"-p - get pid server\n"
 			"-h - help\n";
     int msqid;
     char pathname[] = "server";
@@ -48,10 +52,10 @@ int main(int argc, char *argv[]){
 	char buf[100];
 	char *index;
 	char num[10];
-	while((opt = getopt(argc, argv, "if:h")) != -1){
+	while((opt = getopt(argc, argv, "if:ph")) != -1){
 		switch (opt){
 			case 'i':
-				printf("Input type of data: ");
+				printf("Type of data:\n1)int\n2)string\n3)struct\nInput type of data: ");
 				scanf("%s", type_data);
 
 				if (strcmp(type_data, "int") == 0){
@@ -74,7 +78,7 @@ int main(int argc, char *argv[]){
 					printf("Unknown type\n");
 					exit(1);
 				}
-				if (msgsnd(msqid, (struct msgbuf *) &mybuf, 8*sizeof(int), 0) < 0){
+				if (msgsnd(msqid, (struct msgbuf *) &mybuf, sizeof(mybuf), 0) < 0){
         			printf("ERROR msgsnd\n");
         			exit(-1);
     			}
@@ -84,13 +88,12 @@ int main(int argc, char *argv[]){
 				if ((fp = fopen(optarg, "r")) != NULL){
 					while(fscanf(fp, "%s", buf) > 0){
 						strcpy(type_data, "int");
-						printf("jksdfhghdr: %s\n", type_data);
-						printf("%s\n\n", buf);
 						
 						if((index = strchr(buf, ':')) != 0){
 							strncpy(type_data, buf, index - buf);
 						} else {
 							printf("Uncorrect data:\n%s\n", buf);
+							break;
 						}
 
 						if (strcmp(type_data, "int") == 0){
@@ -108,7 +111,7 @@ int main(int argc, char *argv[]){
 							mybuf.mtype = STRUCT;
 						}
 						
-						if (msgsnd(msqid, (struct msgbuf *) &mybuf, 8*sizeof(int), 0) < 0){
+						if (msgsnd(msqid, (struct msgbuf *) &mybuf, sizeof(mybuf), 0) < 0){
         					printf("ERROR msgsnd\n");
         					exit(-1);
     					}
@@ -117,6 +120,21 @@ int main(int argc, char *argv[]){
 					printf("ERROR FOPEN\n");
 					exit(1);
 				}
+				break;
+			
+			case 'p':
+				mybuf.mtype = REQUEST_SERVER_PID;
+				if (msgsnd(msqid, (struct msgbuf *) &mybuf, sizeof(mybuf), 0) < 0){
+        			printf("ERROR msgsnd\n");
+        			exit(-1);
+    			}
+
+				if (msgrcv(msqid, (struct msgbuf *) &mybuf, sizeof(mybuf), SERVER_PID, 0) < 0){
+					printf("ERROR MSGRCV\n");
+					exit(1);
+				}
+
+				printf("Server pid: %d\n", mybuf.num);
 				break;
 			case 'h':
 				printf("%s", str_help);
