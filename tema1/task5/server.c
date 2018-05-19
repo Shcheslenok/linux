@@ -10,7 +10,7 @@
 #include <time.h>
 
 #define INT 1
-#define ARRAY 2
+#define STRING 2
 #define STRUCT 3
 
 //server
@@ -20,14 +20,14 @@ int main(int argc, char *argv[]){
 	mode_t mode = 0666;
 	int fd;
 	char * file_int = "int.txt";
-	char * file_array = "array.txt";
+	char * file_str = "array.txt";
 	char * file_struct = "struct.txt";
 	char str_help[] = 
 			"server [options] ...\n"
 			"-D - Start as demon\n"
-			"-i <namefile> - name for file with int\n"
-			"-c <namefile> - name for file with char[5]\n"
-			"-s <namefile> - name for file with struct\n"
+			"-i <namefile> - name of file with int\n"
+			"-c <namefile> - name of file with char[5]\n"
+			"-s <namefile> - name of file with struct\n"
 			"-h - help\n";
 
 	while((opt = getopt(argc, argv, "Dhi:c:s:")) != -1){
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]){
 				break;
 
 			case 'c':
-				file_array = optarg;
+				file_str = optarg;
 				break;
 
 			case 's':
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]){
 	char elem[10];
 
     while(1){
-    	if (msgrcv(msqid, (struct msgbuf *) &mybuf, 8*sizeof(int), 0, 0) < 0){
+    	if (msgrcv(msqid, (struct msgbuf *) &mybuf, sizeof(mybuf), 0, 0) < 0){
         	printf("ERROR msgrcv\n");
         	exit(-1);
     	}
@@ -123,8 +123,8 @@ int main(int argc, char *argv[]){
 			close(fd);
 		}
 
-		if (mybuf.mtype == ARRAY){
-			if ((fd=open(file_array, O_WRONLY | O_APPEND | O_CREAT, mode)) < 0){
+		if (mybuf.mtype == STRING){
+			if ((fd=open(file_str, O_WRONLY | O_APPEND | O_CREAT, mode)) < 0){
 				printf("ERROR OPEN\n");
 				exit(-1);
 			}
