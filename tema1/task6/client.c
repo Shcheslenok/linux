@@ -8,6 +8,8 @@
 #include <errno.h>
 #include <unistd.h>
 
+#define PORT 51000
+
 void main(int argc, char **argv){
 	int sockfd;
 	int n;
@@ -30,7 +32,7 @@ void main(int argc, char **argv){
 
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(51000);
+	servaddr.sin_port = htons(PORT);
 	if(inet_aton(argv[1], &servaddr.sin_addr) == 0){
 		printf("Invalid IP address\n");
 		close(sockfd);
@@ -42,8 +44,6 @@ void main(int argc, char **argv){
 		close(sockfd);
 		exit(1);
 	}
-
-	//memset(sendline, '\0', sizeof(sendline));
 
 	while(1){
 		printf("=> ");
@@ -62,16 +62,13 @@ void main(int argc, char **argv){
 			exit(1);
 		}
 		
-		//printf("num_str: %s\n", recvline);
 		num_str = atoi(recvline);
-		//printf("num str: %d\n", num_str);
 		for(int i = 0; i < num_str; i++){
 			if ((n = read(sockfd, recvline, 1000)) < 0){
 				perror("Can\'t read\n");
 				close(sockfd);
 				exit(1);
-			}
-			//printf("i = %d\n", i); 
+			} 
 			printf("%s", recvline);
 
 			memset(recvline, '\0', sizeof(recvline));
